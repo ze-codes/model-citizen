@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "author": "Ze Chen",
-  "repository": "TBD",
-  "homepage": "TBD",
+  "repository": "github:ze-codes/model-citizen",
+  "homepage": "https://over-drive.xyz/apps/modelcitizen",
   "files": [
     "src/",
     "assets/",
