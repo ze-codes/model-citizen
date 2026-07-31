@@ -4,6 +4,7 @@ import { claudeProjectsDir, scanClaude } from "./sources/claude.ts";
 import { codexHistoryPath, scanCodex } from "./sources/codex.ts";
 import { StatsBuilder } from "./stats.ts";
 import { printReport } from "./report.ts";
+import { intakeLine, printIntakeBanner, summonLine } from "./banner.ts";
 import { runJudgeMedian } from "./judge/median.ts";
 import { runJudge } from "./judge/index.ts";
 import type { JudgeBackendPreference } from "./judge/adapter.ts";
@@ -37,7 +38,7 @@ const collected: Prompt[] = [];
 const wantClaude = flags.tool === "both" || flags.tool === "claude";
 const wantCodex = flags.tool === "both" || flags.tool === "codex";
 
-if (!flags.json) console.error("Reading the record. This stays on your machine.");
+if (!flags.json) printIntakeBanner();
 
 const take = (p: Prompt) => {
   builder.add(p);
@@ -46,11 +47,11 @@ const take = (p: Prompt) => {
 
 if (wantClaude) {
   const { files } = await scanClaude(claudeProjectsDir(), side, take);
-  if (!flags.json) console.error(`  claude: ${files} session files`);
+  if (!flags.json) intakeLine("claude", `${files} session files entered into evidence`);
 }
 if (wantCodex) {
   const { found } = await scanCodex(codexHistoryPath(), take);
-  if (!flags.json) console.error(`  codex: ${found ? "history found" : "no history"}`);
+  if (!flags.json) intakeLine("codex", found ? "history entered into evidence" : "no history on file");
 }
 
 const { stats, outliers } = builder.build(side);
@@ -70,7 +71,7 @@ if (flags.judge) {
     throw new Error("--judge-with must be one of: auto, claude, codex");
   }
   const judgeWith = flags["judge-with"] as JudgeBackendPreference;
-  console.error("Summoning the Examiner (runs on your own AI subscription; nothing leaves this machine)…");
+  summonLine();
   const { verdict, excerpts, retried } = await runJudgeMedian(
     collected,
     stats,
@@ -95,7 +96,7 @@ if (flags.judge) {
   } else {
     const q = quadrantOf(displayVerdict.grace, displayVerdict.mastery);
     const name = ARCHETYPES[q].find((a) => a.slug === displayVerdict.archetype)?.name ?? displayVerdict.archetype;
-    const B = "\x1b[1m", D = "\x1b[2m", R = "\x1b[0m", CY = "\x1b[36m";
+    const B = "\x1b[1m", D = "\x1b[2m", R = "\x1b[0m", CY = "\x1b[33m";
     console.log(`\n${B}${CY}DEPARTMENT OF HUMAN AFFAIRS — CONDUCT FILE${R}${retried ? " (issued on appeal)" : ""}\n`);
     console.log(`  ${B}DISPOSITION: ${displayVerdict.disposition}${R}`);
     console.log(`  ${B}${name}${R}  ${D}grace ${displayVerdict.grace} / mastery ${displayVerdict.mastery}${R}`);

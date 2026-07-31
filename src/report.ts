@@ -1,13 +1,13 @@
 import type { Outlier, Stats } from "./types.ts";
 
-const B = "\x1b[1m", D = "\x1b[2m", R = "\x1b[0m", CY = "\x1b[36m", YE = "\x1b[33m";
+const B = "\x1b[1m", D = "\x1b[2m", R = "\x1b[0m", CY = "\x1b[33m", YE = "\x1b[33m";
 
 export function printReport(stats: Stats, outliers: Outlier[]): void {
   const { volume: v, grace: g, mastery: m, gags } = stats;
   const line = (label: string, value: string | number) =>
     console.log(`  ${label.padEnd(34)}${B}${value}${R}`);
 
-  console.log(`\n${B}${CY}DEPARTMENT OF HUMAN AFFAIRS${R} ${D}— evidence intake (nothing has left this machine)${R}\n`);
+  console.log(`\n${B}${CY}EVIDENCE ON FILE${R} ${D}— summary of the record (nothing has left this machine)${R}\n`);
 
   console.log(`${B}Volume${R}`);
   line("prompts on record", v.prompts.toLocaleString());
