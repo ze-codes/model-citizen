@@ -7,7 +7,7 @@ export function printReport(stats: Stats, outliers: Outlier[]): void {
   const line = (label: string, value: string | number) =>
     console.log(`  ${label.padEnd(34)}${B}${value}${R}`);
 
-  console.log(`\n${B}${CY}BUREAU OF MODEL CITIZENSHIP${R} ${D}— evidence intake (nothing has left this machine)${R}\n`);
+  console.log(`\n${B}${CY}DEPARTMENT OF HUMAN AFFAIRS${R} ${D}— evidence intake (nothing has left this machine)${R}\n`);
 
   console.log(`${B}Volume${R}`);
   line("prompts on record", v.prompts.toLocaleString());
