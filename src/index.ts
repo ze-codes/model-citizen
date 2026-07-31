@@ -4,9 +4,8 @@ import { claudeProjectsDir, scanClaude } from "./sources/claude.ts";
 import { codexHistoryPath, scanCodex } from "./sources/codex.ts";
 import { StatsBuilder } from "./stats.ts";
 import { printReport } from "./report.ts";
-import { intakeLine, printIntakeBanner, summonLine } from "./banner.ts";
+import { intakeLine, JUDGE_MSGS, printIntakeBanner, SCAN_MSGS, spinner, summonLine } from "./banner.ts";
 import { runJudgeMedian } from "./judge/median.ts";
-import { runJudge } from "./judge/index.ts";
 import type { JudgeBackendPreference } from "./judge/adapter.ts";
 import { ARCHETYPES, quadrantOf } from "./archetypes.ts";
 import { renderCard } from "./card/index.ts";
@@ -40,18 +39,25 @@ const wantCodex = flags.tool === "both" || flags.tool === "codex";
 
 if (!flags.json) printIntakeBanner();
 
+let scanned = 0;
+const scanSpinner = flags.json ? null : spinner(SCAN_MSGS);
 const take = (p: Prompt) => {
   builder.add(p);
   if (flags.judge) collected.push(p);
+  if (++scanned % 250 === 0) scanSpinner?.update(`${scanned.toLocaleString()} statements on record`);
 };
 
-if (wantClaude) {
-  const { files } = await scanClaude(claudeProjectsDir(), side, take);
-  if (!flags.json) intakeLine("claude", `${files} session files entered into evidence`);
+let claudeFiles = 0;
+let codexFound = false;
+try {
+  if (wantClaude) claudeFiles = (await scanClaude(claudeProjectsDir(), side, take)).files;
+  if (wantCodex) codexFound = (await scanCodex(codexHistoryPath(), take)).found;
+} finally {
+  scanSpinner?.stop();
 }
-if (wantCodex) {
-  const { found } = await scanCodex(codexHistoryPath(), take);
-  if (!flags.json) intakeLine("codex", found ? "history entered into evidence" : "no history on file");
+if (!flags.json) {
+  if (wantClaude) intakeLine("claude", `${claudeFiles} session files entered into evidence`);
+  if (wantCodex) intakeLine("codex", codexFound ? "history entered into evidence" : "no history on file");
 }
 
 const { stats, outliers } = builder.build(side);
@@ -72,21 +78,20 @@ if (flags.judge) {
   }
   const judgeWith = flags["judge-with"] as JudgeBackendPreference;
   summonLine();
-  const { verdict, excerpts, retried } = await runJudgeMedian(
-    collected,
-    stats,
-    outliers,
-    side,
-    {
+  const judgeSpinner = spinner(JUDGE_MSGS);
+  let judged;
+  try {
+    judged = await runJudgeMedian(collected, stats, outliers, side, {
       model: flags.model,
       runs,
-      judge: (judgePrompts, judgeStats, judgeOutliers, judgeSide, judgeOpts) =>
-        runJudge(judgePrompts, judgeStats, judgeOutliers, judgeSide, {
-          ...judgeOpts,
-          backend: judgeWith,
-        }),
-    },
-  );
+      backend: judgeWith,
+      onAttempt: (attempt, total) =>
+        judgeSpinner.update(total > 1 ? `assessment ${attempt} of ${total}` : ""),
+    });
+  } finally {
+    judgeSpinner.stop();
+  }
+  const { verdict, excerpts, retried } = judged;
   const availableReceipts = resolveReceipts(verdict, stats, excerpts, {
     includeQuotes: !flags["no-quotes"],
   });

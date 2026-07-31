@@ -3,15 +3,17 @@ import { dispositionStatus } from "../disposition.ts";
 import {
   runJudge,
   type JudgeResult,
+  type RunJudgeOpts,
 } from "./index.ts";
-import type { JudgeCallOpts } from "./adapter.ts";
 
 export type JudgeRunner = typeof runJudge;
 
-export interface JudgeMedianOptions extends JudgeCallOpts {
+export interface JudgeMedianOptions extends RunJudgeOpts {
   runs?: number;
   /** Test seam: production callers use runJudge. */
   judge?: JudgeRunner;
+  /** Called before each serial judge run (1-based). */
+  onAttempt?: (attempt: number, total: number) => void;
 }
 
 export interface JudgeMedianResult extends JudgeResult {
@@ -42,14 +44,16 @@ export async function runJudgeMedian(
   }
 
   const judge = options.judge ?? runJudge;
-  const judgeOptions: JudgeCallOpts = {
+  const judgeOptions: RunJudgeOpts = {
     model: options.model,
     timeoutMs: options.timeoutMs,
+    backend: options.backend,
   };
   const results: JudgeResult[] = [];
   for (let index = 0; index < runs; index++) {
     // Deliberately serial: concurrent local judge processes compete for the same
     // subscription and make the trust UX much harder to reason about.
+    options.onAttempt?.(index + 1, runs);
     results.push(await judge(prompts, stats, outliers, side, judgeOptions));
   }
 

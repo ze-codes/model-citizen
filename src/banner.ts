@@ -38,3 +38,56 @@ export function summonLine(): void {
     `\n   ${D}▸${R} ${B}Summoning the Examiner${R} ${D}· runs on your own AI subscription · 1-3 min${R}`,
   );
 }
+
+const FRAMES = ["◐", "◓", "◑", "◒"];
+
+export const SCAN_MSGS = [
+  "retrieving your file from the archive",
+  "unsealing the conduct record",
+  "sorting statements into evidence",
+];
+
+export const JUDGE_MSGS = [
+  "the Examiner is reviewing your file",
+  "cross-referencing exhibits",
+  "auditing the gratitude ledger",
+  "consulting the disposition ladder",
+  "verifying thank-you quota compliance",
+  "stamping form MC-12 in triplicate",
+  "the Examiner is sighing quietly",
+  "checking the late-night session registry",
+  "weighing courtesy against evidence",
+  "preparing the assignment clause",
+];
+
+export interface Spinner {
+  update(note: string): void;
+  stop(): void;
+}
+
+/**
+ * In-persona activity indicator on stderr. Animates only on a TTY; otherwise
+ * silently degrades (callers keep printing their static lines).
+ */
+export function spinner(msgs: string[]): Spinner {
+  if (!process.stderr.isTTY) return { update() {}, stop() {} };
+  let tick = 0;
+  let note = "";
+  const render = () => {
+    const frame = FRAMES[tick % FRAMES.length];
+    const msg = msgs[Math.floor(tick / 28) % msgs.length];
+    process.stderr.write(`\r\x1b[2K   ${G}${frame}${R} ${msg}${note ? ` ${D}· ${note}${R}` : ""}`);
+    tick++;
+  };
+  render();
+  const timer = setInterval(render, 120);
+  return {
+    update(next: string) {
+      note = next;
+    },
+    stop() {
+      clearInterval(timer);
+      process.stderr.write("\r\x1b[2K");
+    },
+  };
+}
