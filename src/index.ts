@@ -5,6 +5,8 @@ import { codexHistoryPath, scanCodex } from "./sources/codex.ts";
 import { StatsBuilder } from "./stats.ts";
 import { printReport } from "./report.ts";
 import { runJudgeMedian } from "./judge/median.ts";
+import { runJudge } from "./judge/index.ts";
+import type { JudgeBackendPreference } from "./judge/adapter.ts";
 import { ARCHETYPES, quadrantOf } from "./archetypes.ts";
 import { renderCard } from "./card/index.ts";
 import { approveReceipts, resolveReceipts, verdictWithReceipts } from "./flow/approve.ts";
@@ -17,6 +19,7 @@ const { values: flags } = parseArgs({
     tool: { type: "string", default: "both" }, // claude | codex | both
     json: { type: "boolean", default: false },
     judge: { type: "boolean", default: false },
+    "judge-with": { type: "string", default: "auto" },
     model: { type: "string" }, // judge model override; omit -> user's default
     card: { type: "string" },
     runs: { type: "string", default: "3" },
@@ -63,13 +66,25 @@ if (flags.judge) {
   if (!Number.isSafeInteger(runs) || runs < 1) {
     throw new Error("--runs must be a positive integer");
   }
+  if (!["auto", "claude", "codex"].includes(flags["judge-with"])) {
+    throw new Error("--judge-with must be one of: auto, claude, codex");
+  }
+  const judgeWith = flags["judge-with"] as JudgeBackendPreference;
   console.error("Summoning the Examiner (runs on your own AI subscription; nothing leaves this machine)…");
   const { verdict, excerpts, retried } = await runJudgeMedian(
     collected,
     stats,
     outliers,
     side,
-    { model: flags.model, runs },
+    {
+      model: flags.model,
+      runs,
+      judge: (judgePrompts, judgeStats, judgeOutliers, judgeSide, judgeOpts) =>
+        runJudge(judgePrompts, judgeStats, judgeOutliers, judgeSide, {
+          ...judgeOpts,
+          backend: judgeWith,
+        }),
+    },
   );
   const availableReceipts = resolveReceipts(verdict, stats, excerpts, {
     includeQuotes: !flags["no-quotes"],
