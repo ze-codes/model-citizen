@@ -50,13 +50,13 @@ local paths, a raw transcript, or account identity. See
 With Bun:
 
 ```sh
-bunx model-citizen
+bunx model-citizen-ai
 ```
 
 With npm and Node.js 20 or newer:
 
 ```sh
-npx model-citizen
+npx model-citizen-ai
 ```
 
 The `0.1.0` source entrypoint still uses Bun runtime APIs, so Bun must also be
@@ -68,7 +68,7 @@ statistics. To request a judgment, render a card, review receipts, preview the
 payload, and keep the result local:
 
 ```sh
-bunx model-citizen --judge --card out/model-citizen.png --local-only
+bunx model-citizen-ai --judge --card out/model-citizen.png --local-only
 ```
 
 The first release can scan both Claude Code and Codex histories. Its implemented

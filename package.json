@@ -1,5 +1,5 @@
 {
-  "name": "model-citizen",
+  "name": "model-citizen-ai",
   "version": "0.1.0",
   "description": "Your AI reads your local Claude Code or Codex history and issues your post-Transition conduct file.",
   "type": "module",
